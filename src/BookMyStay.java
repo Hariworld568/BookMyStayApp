@@ -1,5 +1,4 @@
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * BookMyStay
@@ -8,9 +7,10 @@ import java.util.Map;
  * UC2: Room Modeling
  * UC3: Inventory (HashMap)
  * UC4: Room Search (Read-Only)
+ * UC5: Booking Requests using Queue (FIFO)
  *
  * @author Hari
- * @version 4.0
+ * @version 5.0
  */
 public class BookMyStay {
 
@@ -18,27 +18,38 @@ public class BookMyStay {
 
         uc1_welcomeMessage();
 
-        // Initialize rooms
+        // Rooms
         Room single = new SingleRoom(1, 2000);
         Room doubleRoom = new DoubleRoom(2, 3500);
         Room suite = new SuiteRoom(3, 6000);
 
-        // Initialize inventory
+        // Inventory
         RoomInventory inventory = new RoomInventory();
         inventory.addRoom(single.getRoomType(), 5);
-        inventory.addRoom(doubleRoom.getRoomType(), 0); // unavailable
-        inventory.addRoom(suite.getRoomType(), 2);
+        inventory.addRoom(doubleRoom.getRoomType(), 2);
+        inventory.addRoom(suite.getRoomType(), 1);
 
         // UC4: Search (READ ONLY)
         SearchService searchService = new SearchService();
         searchService.searchAvailableRooms(inventory, single, doubleRoom, suite);
+
+        // UC5: Booking Request Queue
+        BookingQueue bookingQueue = new BookingQueue();
+
+        System.out.println("\n--- Booking Requests ---");
+
+        bookingQueue.addRequest(new Reservation("Hari", "Single Room"));
+        bookingQueue.addRequest(new Reservation("John", "Suite Room"));
+        bookingQueue.addRequest(new Reservation("Priya", "Double Room"));
+
+        bookingQueue.displayQueue();
     }
 
     // ================= UC1 =================
     public static void uc1_welcomeMessage() {
         System.out.println("====================================");
         System.out.println(" Welcome to Book My Stay Application ");
-        System.out.println(" Version: 4.0 ");
+        System.out.println(" Version: 5.0 ");
         System.out.println("====================================");
     }
 
@@ -93,7 +104,6 @@ public class BookMyStay {
 
     // ================= UC3 =================
     static class RoomInventory {
-
         private Map<String, Integer> inventory;
 
         public RoomInventory() {
@@ -111,30 +121,64 @@ public class BookMyStay {
         public void updateAvailability(String type, int change) {
             inventory.put(type, getAvailability(type) + change);
         }
-
-        public Map<String, Integer> getAllRooms() {
-            return inventory;
-        }
     }
 
     // ================= UC4 =================
     static class SearchService {
 
-        // READ ONLY method
         public void searchAvailableRooms(RoomInventory inventory, Room... rooms) {
 
             System.out.println("\n--- Available Rooms ---");
 
             for (Room room : rooms) {
-
                 int available = inventory.getAvailability(room.getRoomType());
 
-                // Defensive check
                 if (available > 0) {
                     room.displayDetails();
                     System.out.println("Available: " + available);
                     System.out.println("------------------------");
                 }
+            }
+        }
+    }
+
+    // ================= UC5 =================
+
+    // Reservation (Booking Request)
+    static class Reservation {
+        String customerName;
+        String roomType;
+
+        public Reservation(String customerName, String roomType) {
+            this.customerName = customerName;
+            this.roomType = roomType;
+        }
+
+        public void display() {
+            System.out.println(customerName + " requested " + roomType);
+        }
+    }
+
+    // Queue Manager
+    static class BookingQueue {
+
+        private Queue<Reservation> queue;
+
+        public BookingQueue() {
+            queue = new LinkedList<>();
+        }
+
+        // Add request (FIFO)
+        public void addRequest(Reservation reservation) {
+            queue.add(reservation);
+        }
+
+        // Display queue
+        public void displayQueue() {
+            System.out.println("\n--- Current Booking Queue (FIFO) ---");
+
+            for (Reservation r : queue) {
+                r.display();
             }
         }
     }
