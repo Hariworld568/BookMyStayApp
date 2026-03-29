@@ -4,70 +4,45 @@ import java.util.Map;
 /**
  * BookMyStay
  *
- * Hotel Booking Management System
- *
- * UC1: Application Entry & Welcome Message
- * UC2: Room Modeling using Inheritance
- * UC3: Centralized Room Inventory using HashMap
+ * UC1: Welcome
+ * UC2: Room Modeling
+ * UC3: Inventory (HashMap)
+ * UC4: Room Search (Read-Only)
  *
  * @author Hari
- * @version 3.0
+ * @version 4.0
  */
 public class BookMyStay {
 
     public static void main(String[] args) {
 
-        // UC1
         uc1_welcomeMessage();
 
-        // UC2 + UC3
-        uc2_and_uc3_inventorySystem();
-    }
-
-    /**
-     * UC1: Displays welcome message
-     */
-    public static void uc1_welcomeMessage() {
-
-        System.out.println("====================================");
-        System.out.println(" Welcome to Book My Stay Application ");
-        System.out.println(" Version: 3.0 ");
-        System.out.println("====================================");
-    }
-
-    /**
-     * UC2 + UC3: Room + Centralized Inventory
-     */
-    public static void uc2_and_uc3_inventorySystem() {
-
-        System.out.println("\n--- Room Inventory ---");
-
-        // Create Room Objects (Domain)
+        // Initialize rooms
         Room single = new SingleRoom(1, 2000);
         Room doubleRoom = new DoubleRoom(2, 3500);
         Room suite = new SuiteRoom(3, 6000);
 
-        // UC3: Centralized Inventory
+        // Initialize inventory
         RoomInventory inventory = new RoomInventory();
-
-        // Register rooms with availability
         inventory.addRoom(single.getRoomType(), 5);
-        inventory.addRoom(doubleRoom.getRoomType(), 3);
+        inventory.addRoom(doubleRoom.getRoomType(), 0); // unavailable
         inventory.addRoom(suite.getRoomType(), 2);
 
-        // Display Inventory
-        inventory.displayInventory();
-
-        // Example Update (simulate booking)
-        System.out.println("\n--- After Booking 1 Single Room ---");
-        inventory.updateAvailability("Single Room", -1);
-
-        inventory.displayInventory();
+        // UC4: Search (READ ONLY)
+        SearchService searchService = new SearchService();
+        searchService.searchAvailableRooms(inventory, single, doubleRoom, suite);
     }
 
-    // ================================
-    // ABSTRACT ROOM CLASS (UC2)
-    // ================================
+    // ================= UC1 =================
+    public static void uc1_welcomeMessage() {
+        System.out.println("====================================");
+        System.out.println(" Welcome to Book My Stay Application ");
+        System.out.println(" Version: 4.0 ");
+        System.out.println("====================================");
+    }
+
+    // ================= UC2 =================
     static abstract class Room {
         int beds;
         double price;
@@ -86,9 +61,6 @@ public class BookMyStay {
         }
     }
 
-    // ================================
-    // ROOM TYPES
-    // ================================
     static class SingleRoom extends Room {
         public SingleRoom(int beds, double price) {
             super(beds, price);
@@ -119,38 +91,50 @@ public class BookMyStay {
         }
     }
 
-    // ================================
-    // UC3: INVENTORY CLASS
-    // ================================
+    // ================= UC3 =================
     static class RoomInventory {
 
         private Map<String, Integer> inventory;
 
-        // Constructor
         public RoomInventory() {
             inventory = new HashMap<>();
         }
 
-        // Add room type
-        public void addRoom(String roomType, int count) {
-            inventory.put(roomType, count);
+        public void addRoom(String type, int count) {
+            inventory.put(type, count);
         }
 
-        // Get availability
-        public int getAvailability(String roomType) {
-            return inventory.getOrDefault(roomType, 0);
+        public int getAvailability(String type) {
+            return inventory.getOrDefault(type, 0);
         }
 
-        // Update availability
-        public void updateAvailability(String roomType, int change) {
-            int current = getAvailability(roomType);
-            inventory.put(roomType, current + change);
+        public void updateAvailability(String type, int change) {
+            inventory.put(type, getAvailability(type) + change);
         }
 
-        // Display inventory
-        public void displayInventory() {
-            for (String type : inventory.keySet()) {
-                System.out.println(type + " Available: " + inventory.get(type));
+        public Map<String, Integer> getAllRooms() {
+            return inventory;
+        }
+    }
+
+    // ================= UC4 =================
+    static class SearchService {
+
+        // READ ONLY method
+        public void searchAvailableRooms(RoomInventory inventory, Room... rooms) {
+
+            System.out.println("\n--- Available Rooms ---");
+
+            for (Room room : rooms) {
+
+                int available = inventory.getAvailability(room.getRoomType());
+
+                // Defensive check
+                if (available > 0) {
+                    room.displayDetails();
+                    System.out.println("Available: " + available);
+                    System.out.println("------------------------");
+                }
             }
         }
     }
