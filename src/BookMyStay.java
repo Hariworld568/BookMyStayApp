@@ -3,10 +3,10 @@ import java.util.*;
 /**
  * BookMyStay
  *
- * UC1 → UC9 Integrated System
+ * UC1 → UC10 Integrated System
  *
  * @author Hari
- * @version 9.0
+ * @version 10.0
  */
 public class BookMyStay {
 
@@ -19,28 +19,37 @@ public class BookMyStay {
         inventory.addRoom("Suite Room", 1);
 
         BookingQueue queue = new BookingQueue();
-
-        // VALID
         queue.addRequest(new Reservation("Hari", "Single Room"));
-
-        // INVALID (wrong room type)
-        queue.addRequest(new Reservation("John", "Deluxe Room"));
+        queue.addRequest(new Reservation("John", "Suite Room"));
 
         BookingService bookingService = new BookingService();
         BookingHistory history = new BookingHistory();
 
-        try {
-            List<ReservationRecord> records =
-                    bookingService.processBookings(queue, inventory);
+        List<ReservationRecord> records = new ArrayList<>();
 
+        try {
+            records = bookingService.processBookings(queue, inventory);
             for (ReservationRecord r : records) {
                 history.addRecord(r);
             }
-
         } catch (BookingException e) {
             System.out.println("ERROR: " + e.getMessage());
         }
 
+        // 🔥 UC10: Cancellation
+        CancellationService cancelService = new CancellationService();
+
+        if (!records.isEmpty()) {
+            String cancelId = records.get(0).reservationId;
+
+            try {
+                cancelService.cancelBooking(cancelId, history, inventory);
+            } catch (BookingException e) {
+                System.out.println("CANCEL ERROR: " + e.getMessage());
+            }
+        }
+
+        // Report after cancellation
         BookingReportService reportService = new BookingReportService();
         reportService.generateReport(history);
     }
@@ -49,7 +58,7 @@ public class BookMyStay {
     public static void uc1_welcomeMessage() {
         System.out.println("====================================");
         System.out.println(" Welcome to Book My Stay Application ");
-        System.out.println(" Version: 9.0 ");
+        System.out.println(" Version: 10.0 ");
         System.out.println("====================================");
     }
 
@@ -116,6 +125,7 @@ public class BookMyStay {
         String reservationId;
         String customerName;
         String roomType;
+        boolean isCancelled = false;
 
         public ReservationRecord(String id, String name, String type) {
             this.reservationId = id;
@@ -140,8 +150,6 @@ public class BookMyStay {
             while (!queue.isEmpty()) {
 
                 Reservation r = queue.getNext();
-
-                // 🔥 VALIDATION (UC9)
                 validator.validate(r, inventory);
 
                 int available = inventory.getAvailability(r.roomType);
@@ -183,6 +191,13 @@ public class BookMyStay {
         public List<ReservationRecord> getAll() {
             return history;
         }
+
+        public ReservationRecord findById(String id) {
+            for (ReservationRecord r : history) {
+                if (r.reservationId.equals(id)) return r;
+            }
+            return null;
+        }
     }
 
     static class BookingReportService {
@@ -191,42 +206,35 @@ public class BookMyStay {
             System.out.println("\n--- Booking Report ---");
 
             for (ReservationRecord r : history.getAll()) {
+
+                String status = r.isCancelled ? "CANCELLED" : "ACTIVE";
+
                 System.out.println(
                         r.reservationId + " | " +
                                 r.customerName + " | " +
-                                r.roomType);
+                                r.roomType + " | " +
+                                status
+                );
             }
 
-            System.out.println("Total Bookings: " + history.getAll().size());
+            System.out.println("Total Records: " + history.getAll().size());
         }
     }
 
     // ================= UC9 =================
-
-    // 🔴 Base Exception
     static class BookingException extends Exception {
-        public BookingException(String message) {
-            super(message);
-        }
+        public BookingException(String msg) { super(msg); }
     }
 
-    // 🔴 Invalid Room
     static class InvalidRoomTypeException extends BookingException {
-        public InvalidRoomTypeException(String msg) {
-            super(msg);
-        }
+        public InvalidRoomTypeException(String msg) { super(msg); }
     }
 
-    // 🔴 Inventory Error
     static class InvalidInventoryException extends BookingException {
-        public InvalidInventoryException(String msg) {
-            super(msg);
-        }
+        public InvalidInventoryException(String msg) { super(msg); }
     }
 
-    // 🔴 Validator
     static class InvalidBookingValidator {
-
         public void validate(Reservation r, RoomInventory inventory)
                 throws BookingException {
 
@@ -238,6 +246,44 @@ public class BookMyStay {
                 throw new InvalidRoomTypeException(
                         "Invalid Room Type: " + r.roomType);
             }
+        }
+    }
+
+    // ================= UC10 =================
+
+    static class CancellationService {
+
+        // 🔥 Stack for rollback (LIFO)
+        private Stack<String> rollbackStack = new Stack<>();
+
+        public void cancelBooking(String reservationId,
+                                  BookingHistory history,
+                                  RoomInventory inventory)
+                throws BookingException {
+
+            System.out.println("\n--- Cancelling Booking ---");
+
+            ReservationRecord record = history.findById(reservationId);
+
+            // Validation
+            if (record == null) {
+                throw new BookingException("Reservation not found");
+            }
+
+            if (record.isCancelled) {
+                throw new BookingException("Already cancelled");
+            }
+
+            // Push to stack (rollback tracking)
+            rollbackStack.push(record.reservationId);
+
+            // Restore inventory
+            inventory.updateAvailability(record.roomType, +1);
+
+            // Mark cancelled
+            record.isCancelled = true;
+
+            System.out.println("CANCELLED: " + reservationId);
         }
     }
 }
