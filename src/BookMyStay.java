@@ -18,6 +18,9 @@ public class BookMyStay {
 
         // Call Use Case 1
         uc1_welcomeMessage();
+
+        // UC2
+        uc2_roomInitialization();
     }
 
     /**
@@ -31,5 +34,89 @@ public class BookMyStay {
         System.out.println("====================================");
 
         System.out.println("Application started successfully!");
+    }
+    public static void uc2_roomInitialization() {
+
+        System.out.println("\n--- Available Room Types ---");
+
+        // Create room objects
+        Room single = new SingleRoom(1, 2000);
+        Room doubleRoom = new DoubleRoom(2, 3500);
+        Room suite = new SuiteRoom(3, 6000);
+
+        // Static availability (simple variables)
+        int singleAvailable = 5;
+        int doubleAvailable = 3;
+        int suiteAvailable = 2;
+
+        // Display details
+        single.displayDetails(singleAvailable);
+        doubleRoom.displayDetails(doubleAvailable);
+        suite.displayDetails(suiteAvailable);
+    }
+
+    // ================================
+    // ABSTRACT CLASS
+    // ================================
+    static abstract class Room {
+        int beds;
+        double price;
+
+        public Room(int beds, double price) {
+            this.beds = beds;
+            this.price = price;
+        }
+
+        // Abstract method
+        abstract String getRoomType();
+
+        // Common method
+        public void displayDetails(int availability) {
+            System.out.println("Room Type: " + getRoomType());
+            System.out.println("Beds: " + beds);
+            System.out.println("Price: ₹" + price);
+            System.out.println("Available: " + availability);
+            System.out.println("-----------------------------");
+        }
+    }
+
+    // ================================
+    // CHILD CLASSES
+    // ================================
+
+    static class SingleRoom extends Room {
+
+        public SingleRoom(int beds, double price) {
+            super(beds, price);
+        }
+
+        @Override
+        String getRoomType() {
+            return "Single Room";
+        }
+    }
+
+    static class DoubleRoom extends Room {
+
+        public DoubleRoom(int beds, double price) {
+            super(beds, price);
+        }
+
+        @Override
+        String getRoomType() {
+            return "Double Room";
+        }
+    }
+
+    static class SuiteRoom extends Room {
+
+        public SuiteRoom(int beds, double price) {
+            super(beds, price);
+        }
+
+        @Override
+        String getRoomType() {
+            return "Suite Room";
+        }
     }
 }
