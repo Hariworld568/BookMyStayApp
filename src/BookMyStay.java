@@ -1,26 +1,27 @@
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * BookMyStay
  *
- * This class represents the Hotel Booking Management System.
- * All use cases will be implemented inside this single class incrementally.
+ * Hotel Booking Management System
  *
  * UC1: Application Entry & Welcome Message
+ * UC2: Room Modeling using Inheritance
+ * UC3: Centralized Room Inventory using HashMap
  *
  * @author Hari
- * @version 1.0
+ * @version 3.0
  */
 public class BookMyStay {
 
-    /**
-     * Main method - Entry point of the application
-     */
     public static void main(String[] args) {
 
-        // Call Use Case 1
+        // UC1
         uc1_welcomeMessage();
 
-        // UC2
-        uc2_roomInitialization();
+        // UC2 + UC3
+        uc2_and_uc3_inventorySystem();
     }
 
     /**
@@ -30,33 +31,42 @@ public class BookMyStay {
 
         System.out.println("====================================");
         System.out.println(" Welcome to Book My Stay Application ");
-        System.out.println(" Version: 1.0 ");
+        System.out.println(" Version: 3.0 ");
         System.out.println("====================================");
-
-        System.out.println("Application started successfully!");
     }
-    public static void uc2_roomInitialization() {
 
-        System.out.println("\n--- Available Room Types ---");
+    /**
+     * UC2 + UC3: Room + Centralized Inventory
+     */
+    public static void uc2_and_uc3_inventorySystem() {
 
-        // Create room objects
+        System.out.println("\n--- Room Inventory ---");
+
+        // Create Room Objects (Domain)
         Room single = new SingleRoom(1, 2000);
         Room doubleRoom = new DoubleRoom(2, 3500);
         Room suite = new SuiteRoom(3, 6000);
 
-        // Static availability (simple variables)
-        int singleAvailable = 5;
-        int doubleAvailable = 3;
-        int suiteAvailable = 2;
+        // UC3: Centralized Inventory
+        RoomInventory inventory = new RoomInventory();
 
-        // Display details
-        single.displayDetails(singleAvailable);
-        doubleRoom.displayDetails(doubleAvailable);
-        suite.displayDetails(suiteAvailable);
+        // Register rooms with availability
+        inventory.addRoom(single.getRoomType(), 5);
+        inventory.addRoom(doubleRoom.getRoomType(), 3);
+        inventory.addRoom(suite.getRoomType(), 2);
+
+        // Display Inventory
+        inventory.displayInventory();
+
+        // Example Update (simulate booking)
+        System.out.println("\n--- After Booking 1 Single Room ---");
+        inventory.updateAvailability("Single Room", -1);
+
+        inventory.displayInventory();
     }
 
     // ================================
-    // ABSTRACT CLASS
+    // ABSTRACT ROOM CLASS (UC2)
     // ================================
     static abstract class Room {
         int beds;
@@ -67,56 +77,81 @@ public class BookMyStay {
             this.price = price;
         }
 
-        // Abstract method
         abstract String getRoomType();
 
-        // Common method
-        public void displayDetails(int availability) {
+        public void displayDetails() {
             System.out.println("Room Type: " + getRoomType());
             System.out.println("Beds: " + beds);
             System.out.println("Price: ₹" + price);
-            System.out.println("Available: " + availability);
-            System.out.println("-----------------------------");
         }
     }
 
     // ================================
-    // CHILD CLASSES
+    // ROOM TYPES
     // ================================
-
     static class SingleRoom extends Room {
-
         public SingleRoom(int beds, double price) {
             super(beds, price);
         }
 
-        @Override
         String getRoomType() {
             return "Single Room";
         }
     }
 
     static class DoubleRoom extends Room {
-
         public DoubleRoom(int beds, double price) {
             super(beds, price);
         }
 
-        @Override
         String getRoomType() {
             return "Double Room";
         }
     }
 
     static class SuiteRoom extends Room {
-
         public SuiteRoom(int beds, double price) {
             super(beds, price);
         }
 
-        @Override
         String getRoomType() {
             return "Suite Room";
+        }
+    }
+
+    // ================================
+    // UC3: INVENTORY CLASS
+    // ================================
+    static class RoomInventory {
+
+        private Map<String, Integer> inventory;
+
+        // Constructor
+        public RoomInventory() {
+            inventory = new HashMap<>();
+        }
+
+        // Add room type
+        public void addRoom(String roomType, int count) {
+            inventory.put(roomType, count);
+        }
+
+        // Get availability
+        public int getAvailability(String roomType) {
+            return inventory.getOrDefault(roomType, 0);
+        }
+
+        // Update availability
+        public void updateAvailability(String roomType, int change) {
+            int current = getAvailability(roomType);
+            inventory.put(roomType, current + change);
+        }
+
+        // Display inventory
+        public void displayInventory() {
+            for (String type : inventory.keySet()) {
+                System.out.println(type + " Available: " + inventory.get(type));
+            }
         }
     }
 }
